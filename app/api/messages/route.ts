@@ -31,9 +31,27 @@ export async function GET(req: Request) {
     const messages = await prisma.message.findMany({
       where: { conversationId },
       orderBy: { createdAt: "asc" },
+      include: {
+        files: {
+          include: {
+            file: true,
+          },
+        },
+      },
     });
 
-    return NextResponse.json(messages);
+    const messagesWithFiles = messages.map((msg) => ({
+      ...msg,
+      attachedFiles: msg.files.map((mf) => ({
+        id: mf.file.id,
+        name: mf.file.originalName,
+        type: mf.file.type,
+        size: mf.file.size,
+        url: mf.file.url,
+      })),
+    }));
+
+    return NextResponse.json(messagesWithFiles);
   } catch (error) {
     console.error("Fetch messages error:", error);
     return NextResponse.json(

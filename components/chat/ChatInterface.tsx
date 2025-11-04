@@ -2,22 +2,40 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Send, Download } from "lucide-react";
+import { Send, Download, Paperclip, X, Loader2, FileText, Image as ImageIcon } from "lucide-react";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { useRouter } from "next/navigation";
 import { exportConversationToPDF, downloadPDF } from "@/lib/exportPDF";
+
+interface AttachedFile {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+}
 
 interface Message {
   id: string;
   role: string;
   content: string;
   createdAt: string;
+  attachedFiles?: AttachedFile[];
+}
+
+interface UploadedFile {
+  file: File;
+  id: string;
+  uploading: boolean;
+  error?: string;
 }
 
 export function ChatInterface({ userId, conversationId }: { userId: string; conversationId?: string }) {
   const [input, setInput] = useState("");
   const [currentConvId, setCurrentConvId] = useState(conversationId);
+  const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const router = useRouter();
 
@@ -33,11 +51,20 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
   });
 
   const sendMessage = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, files }: { content: string; files: UploadedFile[] }) => {
+      const formData = new FormData();
+      formData.append("content", content);
+      if (currentConvId) {
+        formData.append("conversationId", currentConvId);
+      }
+      
+      files.forEach((fileData) => {
+        formData.append("files", fileData.file);
+      });
+
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, conversationId: currentConvId }),
+        body: formData,
       });
       if (!res.ok) throw new Error("Failed to send message");
       return res.json();
@@ -47,6 +74,7 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
         setCurrentConvId(data.conversationId);
         router.push(`/chat/${data.conversationId}`);
       }
+      setAttachedFiles([]);
       queryClient.invalidateQueries({ queryKey: ["messages", currentConvId || data.conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
@@ -56,11 +84,38 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const newFiles: UploadedFile[] = files.map((file) => ({
+      file,
+      id: Math.random().toString(36),
+      uploading: false,
+    }));
+    setAttachedFiles((prev) => [...prev, ...newFiles]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removeFile = (id: string) => {
+    setAttachedFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || sendMessage.isPending) return;
-    sendMessage.mutate(input);
+    if ((!input.trim() && attachedFiles.length === 0) || sendMessage.isPending) return;
+    
+    setAttachedFiles((prev) =>
+      prev.map((f) => ({ ...f, uploading: true }))
+    );
+    
+    sendMessage.mutate({ content: input || "Analyze these files", files: attachedFiles });
     setInput("");
+  };
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith("image/")) return <ImageIcon size={16} />;
+    return <FileText size={16} />;
   };
 
   const handleExportPDF = async () => {
@@ -110,6 +165,34 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
                     : "bg-gray-100 text-gray-800 rounded-2xl px-4 py-3"
                 }`}
               >
+                {message.attachedFiles && message.attachedFiles.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {message.attachedFiles.map((file) => (
+                      <a
+                        key={file.id}
+                        href={file.url}
+                        download={file.name}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center gap-2 px-2 py-1 rounded hover:opacity-80 transition-opacity ${
+                          message.role === "user"
+                            ? "bg-blue-500"
+                            : "bg-white text-gray-700"
+                        }`}
+                      >
+                        {getFileIcon(file.type)}
+                        <div className="flex flex-col">
+                          <span className="text-xs truncate max-w-[120px] font-medium">
+                            {file.name}
+                          </span>
+                          <span className="text-[10px] opacity-75">
+                            {file.type.split('/')[1].toUpperCase()} • {(file.size / 1024).toFixed(0)}KB
+                          </span>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
                 {message.role === "user" ? (
                   <p>{message.content}</p>
                 ) : (
@@ -123,7 +206,50 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
       </div>
 
       <div className="p-4 border-t border-gray-200">
+        {attachedFiles.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {attachedFiles.map((fileData) => (
+              <div
+                key={fileData.id}
+                className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg"
+              >
+                {fileData.uploading ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  getFileIcon(fileData.file.type)
+                )}
+                <span className="text-sm text-gray-700 max-w-[150px] truncate">
+                  {fileData.file.name}
+                </span>
+                <button
+                  onClick={() => removeFile(fileData.id)}
+                  className="text-gray-500 hover:text-red-500"
+                  type="button"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFileSelect}
+            className="hidden"
+            multiple
+            accept="image/*,.pdf,.docx"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="p-3 text-gray-600 hover:bg-gray-100 rounded-lg"
+            disabled={sendMessage.isPending}
+            title="Attach files"
+          >
+            <Paperclip size={20} />
+          </button>
           <input
             type="text"
             value={input}
@@ -134,10 +260,10 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
           />
           <button
             type="submit"
-            disabled={!input.trim() || sendMessage.isPending}
+            disabled={(!input.trim() && attachedFiles.length === 0) || sendMessage.isPending}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            <Send size={20} />
+            {sendMessage.isPending ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
           </button>
         </form>
       </div>
