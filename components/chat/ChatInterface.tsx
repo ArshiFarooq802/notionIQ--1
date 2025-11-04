@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Send, Download } from "lucide-react";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { useRouter } from "next/navigation";
+import { exportConversationToPDF, downloadPDF } from "@/lib/exportPDF";
 
 interface Message {
   id: string;
@@ -62,11 +63,22 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
     setInput("");
   };
 
+  const handleExportPDF = async () => {
+    if (messages.length === 0) return;
+    const pdf = await exportConversationToPDF("Chat Conversation", messages);
+    downloadPDF(pdf, `conversation-${currentConvId || Date.now()}.pdf`);
+  };
+
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-800">Chat</h2>
-        <button className="p-2 hover:bg-gray-100 rounded-lg">
+        <button
+          onClick={handleExportPDF}
+          disabled={messages.length === 0}
+          className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+          title="Export as PDF"
+        >
           <Download size={20} className="text-gray-600" />
         </button>
       </div>
