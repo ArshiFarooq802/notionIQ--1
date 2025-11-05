@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateResponse } from "@/lib/gemini";
+import { generateResponse, generateResponseWithImages } from "@/lib/gemini";
 import { uploadFileToUT } from "@/lib/uploadthing";
 import { parseFile } from "@/lib/fileParser";
 
@@ -33,13 +33,14 @@ export async function POST(req: Request) {
 
     let fileContext = "";
     const uploadedFileIds: string[] = [];
+    const imageData: Array<{ base64: string; mimeType: string }> = [];
 
     if (files.length > 0) {
       for (const file of files) {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        const { text, pages } = await parseFile(buffer, file.type);
+        const { text, pages, imageData: imgData } = await parseFile(buffer, file.type);
 
         const { url, key } = await uploadFileToUT(file);
 
@@ -59,6 +60,13 @@ export async function POST(req: Request) {
         
         if (text) {
           fileContext += `\n\n[Content from file "${file.name}"]\n${text.slice(0, 15000)}\n`;
+        }
+        
+        if (imgData) {
+          imageData.push({
+            base64: imgData.base64,
+            mimeType: imgData.mimeType,
+          });
         }
       }
     }
@@ -84,7 +92,13 @@ export async function POST(req: Request) {
       ? `${content || "Please analyze the following files:"}\n${fileContext}`
       : content;
 
-    const aiResponse = await generateResponse(fullPrompt);
+    let aiResponse: string;
+    
+    if (imageData.length > 0) {
+      aiResponse = await generateResponseWithImages(fullPrompt, imageData);
+    } else {
+      aiResponse = await generateResponse(fullPrompt);
+    }
 
     await prisma.message.create({
       data: {

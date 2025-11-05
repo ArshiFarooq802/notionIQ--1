@@ -9,6 +9,7 @@ export async function parseFile(file: Buffer, fileType: string) {
       return {
         text: data.text,
         pages: data.numpages,
+        imageData: null,
       };
     } else if (
       fileType ===
@@ -18,24 +19,32 @@ export async function parseFile(file: Buffer, fileType: string) {
       return {
         text: result.value,
         pages: null,
+        imageData: null,
       };
     } else if (fileType.startsWith("image/")) {
-      const metadata = await sharp(file).metadata();
+      const base64 = file.toString("base64");
+      const mimeType = fileType;
       return {
-        text: `Image file: ${metadata.width}x${metadata.height}`,
+        text: "",
         pages: 1,
+        imageData: {
+          base64,
+          mimeType,
+        },
       };
     }
 
     return {
       text: "",
       pages: null,
+      imageData: null,
     };
   } catch (error) {
     console.error("File parsing error:", error);
     return {
       text: "",
       pages: null,
+      imageData: null,
     };
   }
 }
