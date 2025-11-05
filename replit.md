@@ -20,7 +20,8 @@ A Next.js educational platform combining Notion-like folder organization with Ch
 - **UI Components**: Custom components with Lucide icons
 - **File Upload**: react-dropzone
 - **Drag & Drop**: @dnd-kit for folder organization
-- **Markdown Rendering**: react-markdown with custom CSS styling
+- **Markdown Rendering**: react-markdown with remark-math, rehype-katex for LaTeX math support
+- **Math Rendering**: KaTeX for beautiful mathematical equations (inline and display mode)
 
 ### Database Schema
 - **Users**: User accounts with email/password authentication
@@ -66,6 +67,8 @@ A Next.js educational platform combining Notion-like folder organization with Ch
 - **Document Summarization**: Click summarize on any file to get AI-generated summary in dedicated conversation window
 - **Quiz Generation**: Generate quizzes from uploaded documents with multiple-choice questions
 - **PYQ Analysis**: Upload Previous Year Questions to generate similar question patterns from your notes
+- **Image Vision**: Upload images (diagrams, handwritten notes, equations) and Gemini can understand and explain the content
+- **Math Support**: AI responses render LaTeX math equations beautifully with KaTeX (inline $...$ and display $$...$$ modes)
 - Each feature creates isolated conversation contexts
 
 ### ✅ Quiz System
@@ -197,6 +200,14 @@ Each chat and summarization session maintains its own unique conversation ID. Me
 - Main content area: Chat interface or folder view
 
 ## Recent Changes
+- November 5, 2025: **Added Math Rendering and Image Vision Support**
+  - Installed remark-math, rehype-katex, and katex packages for LaTeX math rendering
+  - Updated MarkdownContent component to support inline ($...$) and display ($$...$$) math equations
+  - Added KaTeX CSS for beautiful mathematical equation rendering
+  - Modified file parser to convert images to base64 format
+  - Implemented Gemini Vision API support for multimodal content (text + images)
+  - Updated chat API to use vision model when images are uploaded
+  - Gemini can now understand and explain diagrams, handwritten notes, and equations in images
 - November 5, 2025: **Migrated file storage from Supabase to UploadThing**
   - Replaced all Supabase storage functions with UploadThing API
   - Updated file upload, download, and deletion across all API routes
