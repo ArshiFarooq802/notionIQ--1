@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { downloadFile } from "@/lib/supabase";
+import { downloadFileFromUT } from "@/lib/uploadthing";
 
 export async function GET(
   req: Request,
@@ -22,7 +22,7 @@ export async function GET(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const blob = await downloadFile(file.name);
+    const blob = await downloadFileFromUT(file.url);
 
     return new NextResponse(blob, {
       headers: {

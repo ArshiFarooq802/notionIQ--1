@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateResponse } from "@/lib/gemini";
-import { uploadFile } from "@/lib/supabase";
+import { uploadFileToUT } from "@/lib/uploadthing";
 import { parseFile } from "@/lib/fileParser";
 
 export async function POST(req: Request) {
@@ -41,12 +41,11 @@ export async function POST(req: Request) {
 
         const { text, pages } = await parseFile(buffer, file.type);
 
-        const fileName = `${session.user.id}/chat/${Date.now()}-${file.name}`;
-        const { url, path } = await uploadFile(file, fileName);
+        const { url, key } = await uploadFileToUT(file);
 
         const dbFile = await prisma.file.create({
           data: {
-            name: path,
+            name: key,
             originalName: file.name,
             type: file.type,
             size: file.size,

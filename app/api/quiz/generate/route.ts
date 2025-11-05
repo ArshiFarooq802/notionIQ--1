@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateResponse } from "@/lib/gemini";
-import { downloadFile } from "@/lib/supabase";
+import { downloadFileFromUT } from "@/lib/uploadthing";
 import { parseFile } from "@/lib/fileParser";
 
 export async function POST(req: Request) {
@@ -23,7 +23,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    const blob = await downloadFile(file.name);
+    if (!file.folderId) {
+      return NextResponse.json(
+        { error: "File must be in a folder to generate quiz" },
+        { status: 400 }
+      );
+    }
+
+    const blob = await downloadFileFromUT(file.url);
     const buffer = Buffer.from(await blob.arrayBuffer());
     const { text } = await parseFile(buffer, file.type);
 
@@ -33,7 +40,7 @@ export async function POST(req: Request) {
         where: { id: pyqFileId },
       });
       if (pyqFile && pyqFile.userId === session.user.id) {
-        const pyqBlob = await downloadFile(pyqFile.name);
+        const pyqBlob = await downloadFileFromUT(pyqFile.url);
         const pyqBuffer = Buffer.from(await pyqBlob.arrayBuffer());
         const pyqParsed = await parseFile(pyqBuffer, pyqFile.type);
         pyqContext = `\n\nPrevious Year Questions for reference:\n${pyqParsed.text.slice(0, 5000)}`;

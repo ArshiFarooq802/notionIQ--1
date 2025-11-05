@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { deleteFile } from "@/lib/supabase";
+import { deleteFileFromUT } from "@/lib/uploadthing";
 
 export async function DELETE(
   req: Request,
@@ -22,7 +22,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    await deleteFile(file.name);
+    await deleteFileFromUT(file.name);
 
     await prisma.file.delete({
       where: { id: params.id },

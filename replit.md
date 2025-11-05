@@ -12,10 +12,10 @@ A Next.js educational platform combining Notion-like folder organization with Ch
 ### Tech Stack
 - **Frontend**: Next.js 15+ with App Router, React 18, Tailwind CSS
 - **Backend**: Next.js API Routes with Server Actions
-- **Database**: PostgreSQL (Supabase) with Prisma ORM
+- **Database**: PostgreSQL with Prisma ORM
 - **Authentication**: NextAuth.js with server-side sessions
 - **AI**: Google Gemini AI for chat, summarization, and quiz generation
-- **File Storage**: Supabase Storage buckets
+- **File Storage**: UploadThing for cloud file storage and management
 - **Real-time Updates**: TanStack Query for seamless data synchronization
 - **UI Components**: Custom components with Lucide icons
 - **File Upload**: react-dropzone
@@ -56,7 +56,7 @@ A Next.js educational platform combining Notion-like folder organization with Ch
 ### ✅ File Management
 - File upload with drag-and-drop support
 - Supported formats: JPG, PNG, PDF, DOCX
-- Supabase Storage integration for cloud file storage
+- UploadThing integration for cloud file storage
 - Automatic file parsing and metadata extraction (size, pages, type)
 - File download functionality
 - File deletion with cascade cleanup
@@ -107,8 +107,8 @@ A Next.js educational platform combining Notion-like folder organization with Ch
 
 ### Required for Full Functionality
 - **GEMINI_API_KEY**: Google Gemini AI API key for chat and AI features
-- **NEXT_PUBLIC_SUPABASE_URL**: Supabase project URL for file storage
-- **NEXT_PUBLIC_SUPABASE_ANON_KEY**: Supabase anonymous key for file storage
+- **UPLOADTHING_SECRET**: UploadThing secret key for file storage (Already Configured)
+- **UPLOADTHING_APP_ID**: UploadThing app ID for file storage (Already Configured)
 - **NEXTAUTH_SECRET**: Secret for NextAuth.js sessions (defaults to SESSION_SECRET)
 
 ## Complete User Journey
@@ -197,7 +197,12 @@ Each chat and summarization session maintains its own unique conversation ID. Me
 - Main content area: Chat interface or folder view
 
 ## Recent Changes
+- November 5, 2025: **Migrated file storage from Supabase to UploadThing**
+  - Replaced all Supabase storage functions with UploadThing API
+  - Updated file upload, download, and deletion across all API routes
+  - Configured UploadThing with authentication middleware and file type validations
+  - All file operations now use UploadThing's secure cloud storage
 - November 3, 2025: Initial project setup with core authentication and chat infrastructure
-- Database schema created and migrated
-- Basic chat UI implemented with conversation isolation
-- Custom markdown rendering with comprehensive CSS styling
+  - Database schema created and migrated
+  - Basic chat UI implemented with conversation isolation
+  - Custom markdown rendering with comprehensive CSS styling
