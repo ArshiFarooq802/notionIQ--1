@@ -1,0 +1,25 @@
+I wanted you to add some more features to the app like when i click on file card not the button buttons div area is excluded just include the icon of file and name and details and exclude the button area and when user click in those area open the file not in new tab but as dialog just like instagram and twitter have the image and file opened where image or file is in center of screen covering the screen size without problem like contractions or expansion in specific direction and the other none file is in transparent black color where behind content can be screen just like a black glass in between them. And a close and download icon button to do there work.
+
+AND ALSO I TOLD TO ADD SUB FOLDER IN FOLDERS JUST LIKE WINDOWS EXPLORER DOES. I WANTED THAT YOU CHANGE THE CURRENT FOLDER PAGE UI TO SHOW MAIN FOLDER IN SIDEBAR AS WELL AS THE MAIN WINDOW WHERE WHEN NO FOLDER IS SELECTED IT SAYS SELECT A FOLDER. JUST LIKE WINDOWS EXPLORER DOES HAVE WHEN USER OPEN ANY FOLDER JUST SHOW THE CONTENT AND SUBFOLDER INSIDE IT AND ALSO IN SIDEBAR MAKE THE FOLDERS DOWN EXPANDABLE SO FOLDER CONTENTS CAN BE SEEN THERE AS WELL. AND SEE FOLDERS CAN HAVE FILES AND SUB FOLDER JUST LIKE WE STORE IN WINDOWS EXPLORER.
+AND A ADD FILES AND NEW FOLDER CARDS JUST LIKE FILES CARDS IN FOLDER. TO ADD SUB FOLDER OR FILES TO FOLDER AND REMOVE THE BIG DRAG AND DROP TEXTED SECTION FOR FILE UPLOAD. INSTEAD MAKE TWO CODE FOR NEW FOLDER AND FILES UPLOAD WHICH USER CLICK TO DO OPERATIONS. AND THOSE TWO CARDS WILL ALWAYS BE AT TOP INDEX AND AFTER THEM START THE OTHER SUB FOLDER AND FILES CARDS.
+
+REMEMBER TO MAKE THEM WORK AS WELL NOT JUST FRONTEND.
+
+
+
+
+
+SEE JUST THINK THE FOLDER MANAGE LIKE NOTION APP. AS MY GOAL IS TO MERGE NOTION AND CHATGPT FOR EDUCATION APP.
+
+And see there are some more things like i wanted you to add a pdf download button for each chatbubble means one complete and only single chat bubble can also be downloaded and then next add two more thing, change the chat window download button to hamburger dropdown menu which have download button as normal and a new button to save that file to any folder that will be asked by the app to save to where just like youtube does when we save video it ask which playlist same thing here also. And next thing i also wanted this same same to folder button function for each chatbubble user can either download or save whole chat or one single chat bubble which he likes it upto point and is good to save. And also fix the pdf which is saved it markdown. As pdf which are downloaded are having some markdown error where markdown symbols are also saved.
+
+
+
+
+
+remember to add the collaping and expanding folders in sidebar and also i told user can nnot only save or download whole chat instead can also save or download any single chat bubble REMEMBER SINGLE CHAT BUBBLE.
+
+
+
+
+Create screen to choose folder === this is will be a dialog not a whole new page open dialog to show the windows explorer like style dialog which again just like the latest folder page style where folder files cards are show just like that show it. JUST LIKE WINDOWS EXPLORER WE CAN WALK THROUGH ALL THE FOLDERS OR CREATE A NEW FOLDER TO FIND SUITABLE PLACE TO SAVE THAT FILE SAME I WANTED FOR THIS THING. A DIALOG EXPLORER
