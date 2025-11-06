@@ -58,23 +58,37 @@ export function FileCard({ file, onPreview }: FileCardProps) {
   };
 
   const handleSummarize = async () => {
-    const res = await fetch("/api/summarize", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileId: file.id }),
-    });
-    const data = await res.json();
-    router.push(`/chat/${data.conversationId}`);
+    router.push(`/chat?summarizing=${file.id}`);
+    
+    try {
+      const res = await fetch("/api/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId: file.id }),
+      });
+      const data = await res.json();
+      router.replace(`/chat/${data.conversationId}`);
+    } catch (error) {
+      console.error("Summarize error:", error);
+      router.push("/folders");
+    }
   };
 
   const handleCreateQuiz = async () => {
-    const res = await fetch("/api/quiz/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileId: file.id }),
-    });
-    const data = await res.json();
-    router.push(`/quiz/${data.quizId}`);
+    router.push(`/quiz?generating=${file.id}`);
+    
+    try {
+      const res = await fetch("/api/quiz/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId: file.id }),
+      });
+      const data = await res.json();
+      router.replace(`/quiz/${data.quizId}`);
+    } catch (error) {
+      console.error("Quiz generation error:", error);
+      router.push("/folders");
+    }
   };
 
   const handleCardClick = (e: React.MouseEvent) => {

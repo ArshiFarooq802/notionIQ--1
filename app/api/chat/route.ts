@@ -13,10 +13,62 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const formData = await req.formData();
-    const content = formData.get("content") as string;
-    const conversationId = formData.get("conversationId") as string | null;
-    const files = formData.getAll("files") as File[];
+    const contentType = req.headers.get("content-type");
+    let content: string;
+    let conversationId: string | null;
+    let fileIds: string[] = [];
+    let fileTexts: string[] = [];
+    let fileImages: Array<{ base64: string; mimeType: string }> = [];
+
+    if (contentType?.includes("application/json")) {
+      const body = await req.json();
+      content = body.content;
+      conversationId = body.conversationId || null;
+      fileIds = body.fileIds || [];
+      fileTexts = body.fileTexts || [];
+      fileImages = body.fileImages || [];
+    } else {
+      const formData = await req.formData();
+      content = formData.get("content") as string;
+      conversationId = formData.get("conversationId") as string | null;
+      const files = formData.getAll("files") as File[];
+
+      if (files.length > 0) {
+        for (const file of files) {
+          const arrayBuffer = await file.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+
+          const { text, pages, imageData: imgData } = await parseFile(buffer, file.type);
+
+          const { url, key } = await uploadFileToUT(file);
+
+          const dbFile = await prisma.file.create({
+            data: {
+              name: key,
+              originalName: file.name,
+              type: file.type,
+              size: file.size,
+              pages,
+              url,
+              userId: session.user.id,
+            },
+          });
+
+          fileIds.push(dbFile.id);
+          
+          if (text) {
+            fileTexts.push(text.slice(0, 15000));
+          }
+          
+          if (imgData) {
+            fileImages.push({
+              base64: imgData.base64,
+              mimeType: imgData.mimeType,
+            });
+          }
+        }
+      }
+    }
 
     let convId = conversationId;
 
@@ -32,43 +84,10 @@ export async function POST(req: Request) {
     }
 
     let fileContext = "";
-    const uploadedFileIds: string[] = [];
-    const imageData: Array<{ base64: string; mimeType: string }> = [];
-
-    if (files.length > 0) {
-      for (const file of files) {
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-
-        const { text, pages, imageData: imgData } = await parseFile(buffer, file.type);
-
-        const { url, key } = await uploadFileToUT(file);
-
-        const dbFile = await prisma.file.create({
-          data: {
-            name: key,
-            originalName: file.name,
-            type: file.type,
-            size: file.size,
-            pages,
-            url,
-            userId: session.user.id,
-          },
-        });
-
-        uploadedFileIds.push(dbFile.id);
-        
-        if (text) {
-          fileContext += `\n\n[Content from file "${file.name}"]\n${text.slice(0, 15000)}\n`;
-        }
-        
-        if (imgData) {
-          imageData.push({
-            base64: imgData.base64,
-            mimeType: imgData.mimeType,
-          });
-        }
-      }
+    if (fileTexts.length > 0) {
+      fileTexts.forEach((text, index) => {
+        fileContext += `\n\n[Content from file ${index + 1}]\n${text}\n`;
+      });
     }
 
     const userMessage = await prisma.message.create({
@@ -79,9 +98,9 @@ export async function POST(req: Request) {
       },
     });
 
-    if (uploadedFileIds.length > 0) {
+    if (fileIds.length > 0) {
       await prisma.messageFile.createMany({
-        data: uploadedFileIds.map((fileId) => ({
+        data: fileIds.map((fileId) => ({
           messageId: userMessage.id,
           fileId,
         })),
@@ -94,8 +113,8 @@ export async function POST(req: Request) {
 
     let aiResponse: string;
     
-    if (imageData.length > 0) {
-      aiResponse = await generateResponseWithImages(fullPrompt, imageData);
+    if (fileImages.length > 0) {
+      aiResponse = await generateResponseWithImages(fullPrompt, fileImages);
     } else {
       aiResponse = await generateResponse(fullPrompt);
     }

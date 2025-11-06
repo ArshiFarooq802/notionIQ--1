@@ -90,8 +90,6 @@ function SortableFolderItem({ folder, selectedFolderId, onSelectFolder, level }:
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="p-0.5"
-          {...listeners}
-          {...attributes}
         >
           {folder.children?.length > 0 ? (
             isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />
@@ -100,26 +98,28 @@ function SortableFolderItem({ folder, selectedFolderId, onSelectFolder, level }:
           )}
         </button>
 
-        <Folder size={16} className="text-blue-600" />
+        <div className="flex items-center gap-2 flex-1" {...listeners} {...attributes}>
+          <Folder size={16} className="text-blue-600" />
 
-        {isEditing ? (
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onBlur={handleRename}
-            onKeyPress={(e) => e.key === "Enter" && handleRename()}
-            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
-            autoFocus
-          />
-        ) : (
-          <span
-            className="flex-1 text-sm"
-            onClick={() => onSelectFolder(folder.id)}
-          >
-            {folder.name}
-          </span>
-        )}
+          {isEditing ? (
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onBlur={handleRename}
+              onKeyPress={(e) => e.key === "Enter" && handleRename()}
+              className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+              autoFocus
+            />
+          ) : (
+            <span
+              className="flex-1 text-sm"
+              onClick={() => onSelectFolder(folder.id)}
+            >
+              {folder.name}
+            </span>
+          )}
+        </div>
 
         <div className="relative">
           <button

@@ -47,6 +47,32 @@ export function FolderContents({ folderId }: FolderContentsProps) {
       if (!res.ok) throw new Error("Failed to create folder");
       return res.json();
     },
+    onMutate: async (name) => {
+      await queryClient.cancelQueries({ queryKey: ["folders"] });
+      
+      const previousFolders = queryClient.getQueryData(["folders"]);
+      
+      const optimisticFolder = {
+        id: `temp-${Date.now()}`,
+        name,
+        parentId: folderId,
+        userId: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        children: [],
+      };
+      
+      queryClient.setQueryData(["folders"], (old: any) => 
+        old ? [...old, optimisticFolder] : [optimisticFolder]
+      );
+      
+      return { previousFolders };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousFolders) {
+        queryClient.setQueryData(["folders"], context.previousFolders);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["folders"] });
       setNewFolderName("");
@@ -65,6 +91,24 @@ export function FolderContents({ folderId }: FolderContentsProps) {
     
     const filesArray = Array.from(e.target.files);
     setUploadingFiles(true);
+
+    const optimisticFiles = filesArray.map(file => ({
+      id: `temp-${file.name}-${Date.now()}`,
+      name: file.name,
+      originalName: file.name,
+      type: file.type,
+      size: file.size,
+      url: "",
+      userId: "",
+      folderId,
+      pages: null,
+      createdAt: new Date().toISOString(),
+      uploading: true,
+    }));
+
+    queryClient.setQueryData(["files", folderId], (old: any) => 
+      old ? [...old, ...optimisticFiles] : optimisticFiles
+    );
 
     try {
       for (const file of filesArray) {
@@ -85,6 +129,7 @@ export function FolderContents({ folderId }: FolderContentsProps) {
       queryClient.invalidateQueries({ queryKey: ["files", folderId] });
     } catch (error) {
       console.error("Upload error:", error);
+      queryClient.invalidateQueries({ queryKey: ["files", folderId] });
       alert("Some files failed to upload. Please try again.");
     } finally {
       setUploadingFiles(false);
@@ -121,15 +166,20 @@ export function FolderContents({ folderId }: FolderContentsProps) {
                   placeholder="Folder name"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                   autoFocus
-                  onKeyPress={(e) => e.key === "Enter" && handleCreateFolder()}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleCreateFolder();
+                    }
+                  }}
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={handleCreateFolder}
-                    disabled={!newFolderName.trim()}
+                    disabled={!newFolderName.trim() || createFolder.isPending}
                     className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
                   >
-                    Create
+                    {createFolder.isPending ? "Creating..." : "Create"}
                   </button>
                   <button
                     onClick={() => {

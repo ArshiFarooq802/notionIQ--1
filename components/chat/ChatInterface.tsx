@@ -29,6 +29,10 @@ interface UploadedFile {
   id: string;
   uploading: boolean;
   error?: string;
+  uploadedId?: string;
+  uploadedUrl?: string;
+  text?: string;
+  imageData?: { base64: string; mimeType: string };
 }
 
 export function ChatInterface({ userId, conversationId }: { userId: string; conversationId?: string }) {
@@ -45,7 +49,7 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
   const router = useRouter();
 
   const { data: messages = [], isLoading } = useQuery({
-    queryKey: ["messages", currentConvId],
+    queryKey: ["messages", currentConvId || "new"],
     queryFn: async () => {
       if (!currentConvId) return [];
       const res = await fetch(`/api/messages?conversationId=${currentConvId}`);
@@ -55,28 +59,75 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
     enabled: !!currentConvId,
   });
 
+  const uploadFile = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/chat/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Failed to upload file");
+      return res.json();
+    },
+  });
+
   const sendMessage = useMutation({
     mutationFn: async ({ content, files }: { content: string; files: UploadedFile[] }) => {
-      const formData = new FormData();
-      formData.append("content", content);
-      if (currentConvId) {
-        formData.append("conversationId", currentConvId);
-      }
-      
-      files.forEach((fileData) => {
-        formData.append("files", fileData.file);
-      });
+      const fileIds = files.map(f => f.uploadedId).filter(Boolean) as string[];
+      const fileTexts = files.map(f => f.text).filter(Boolean) as string[];
+      const fileImages = files.map(f => f.imageData).filter(Boolean);
 
       const res = await fetch("/api/chat", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content,
+          conversationId: currentConvId,
+          fileIds,
+          fileTexts,
+          fileImages,
+        }),
       });
       if (!res.ok) throw new Error("Failed to send message");
       return res.json();
     },
+    onMutate: async ({ content, files }) => {
+      const queryKey = ["messages", currentConvId || "new"];
+      await queryClient.cancelQueries({ queryKey });
+      
+      const previousMessages = queryClient.getQueryData(queryKey);
+      
+      const optimisticMessage = {
+        id: `temp-${Date.now()}`,
+        role: "user",
+        content: content || "Analyze these files",
+        createdAt: new Date().toISOString(),
+        attachedFiles: files.filter(f => f.uploadedId).map(f => ({
+          id: f.uploadedId!,
+          name: f.file.name,
+          type: f.file.type,
+          size: f.file.size,
+          url: f.uploadedUrl!,
+        })),
+      };
+      
+      queryClient.setQueryData(queryKey, (old: any) => 
+        old ? [...old, optimisticMessage] : [optimisticMessage]
+      );
+      
+      return { previousMessages, queryKey };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousMessages && context?.queryKey) {
+        queryClient.setQueryData(context.queryKey, context.previousMessages);
+      }
+    },
     onSuccess: (data) => {
       if (!currentConvId) {
         setCurrentConvId(data.conversationId);
+        queryClient.removeQueries({ queryKey: ["messages", "new"] });
         router.push(`/chat/${data.conversationId}`);
       }
       setAttachedFiles([]);
@@ -89,16 +140,44 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const newFiles: UploadedFile[] = files.map((file) => ({
       file,
       id: Math.random().toString(36),
-      uploading: false,
+      uploading: true,
     }));
     setAttachedFiles((prev) => [...prev, ...newFiles]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+
+    for (const newFile of newFiles) {
+      try {
+        const uploadedData = await uploadFile.mutateAsync(newFile.file);
+        setAttachedFiles((prev) =>
+          prev.map((f) =>
+            f.id === newFile.id
+              ? {
+                  ...f,
+                  uploading: false,
+                  uploadedId: uploadedData.id,
+                  uploadedUrl: uploadedData.url,
+                  text: uploadedData.text,
+                  imageData: uploadedData.imageData,
+                }
+              : f
+          )
+        );
+      } catch (error) {
+        setAttachedFiles((prev) =>
+          prev.map((f) =>
+            f.id === newFile.id
+              ? { ...f, uploading: false, error: "Upload failed" }
+              : f
+          )
+        );
+      }
     }
   };
 
@@ -108,11 +187,10 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!input.trim() && attachedFiles.length === 0) || sendMessage.isPending) return;
+    const hasUploadingFiles = attachedFiles.some(f => f.uploading);
+    const hasErrors = attachedFiles.some(f => f.error);
     
-    setAttachedFiles((prev) =>
-      prev.map((f) => ({ ...f, uploading: true }))
-    );
+    if ((!input.trim() && attachedFiles.length === 0) || sendMessage.isPending || hasUploadingFiles || hasErrors) return;
     
     sendMessage.mutate({ content: input || "Analyze these files", files: attachedFiles });
     setInput("");
@@ -315,16 +393,22 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
               >
                 {fileData.uploading ? (
                   <Loader2 className="animate-spin" size={16} />
+                ) : fileData.error ? (
+                  <X size={16} className="text-red-500" />
                 ) : (
                   getFileIcon(fileData.file.type)
                 )}
-                <span className="text-sm text-gray-700 max-w-[150px] truncate">
+                <span className={`text-sm max-w-[150px] truncate ${fileData.error ? 'text-red-500' : 'text-gray-700'}`}>
                   {fileData.file.name}
                 </span>
+                {fileData.error && (
+                  <span className="text-xs text-red-500">Failed</span>
+                )}
                 <button
                   onClick={() => removeFile(fileData.id)}
                   className="text-gray-500 hover:text-red-500"
                   type="button"
+                  disabled={fileData.uploading}
                 >
                   <X size={16} />
                 </button>
@@ -360,7 +444,12 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
           />
           <button
             type="submit"
-            disabled={(!input.trim() && attachedFiles.length === 0) || sendMessage.isPending}
+            disabled={
+              (!input.trim() && attachedFiles.length === 0) || 
+              sendMessage.isPending || 
+              attachedFiles.some(f => f.uploading) ||
+              attachedFiles.some(f => f.error)
+            }
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {sendMessage.isPending ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}

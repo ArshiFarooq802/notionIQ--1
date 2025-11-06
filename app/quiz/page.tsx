@@ -2,15 +2,14 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChatInterface } from "@/components/chat/ChatInterface";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 
-export default function ChatPage() {
+export default function QuizPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const summarizing = searchParams.get("summarizing");
+  const generating = searchParams.get("generating");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -30,14 +29,15 @@ export default function ChatPage() {
     return null;
   }
 
-  if (summarizing) {
+  if (generating) {
     return (
       <div className="flex items-center justify-center h-screen flex-col gap-4">
         <Loader2 className="animate-spin" size={48} />
-        <p className="text-lg text-gray-600">Generating summary...</p>
+        <p className="text-lg text-gray-600">Generating quiz...</p>
       </div>
     );
   }
 
-  return <ChatInterface userId={session.user.id} />;
+  router.push("/folders");
+  return null;
 }
