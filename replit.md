@@ -82,13 +82,27 @@ A Next.js educational platform combining Notion-like folder organization with Ch
 - Score calculation and percentage display
 
 ### ✅ Export & Download
-- PDF export for any chat conversation
-- Download files directly from file cards
+- **Full Conversation Export**: Download entire chat conversation as PDF via dropdown menu
+- **Individual Message Export**: Download single chat bubbles as PDFs with hover buttons
+- **Save to Folder**: Save entire conversations or individual messages directly to folders
+- **File Downloads**: Download original files directly from file cards
 - Export includes timestamps and formatted messages
+
+### ✅ File Preview & Management
+- **Instagram/Twitter-Style Preview**: Click any file card to open full-screen preview modal
+- **Navigation**: Use arrow keys or on-screen buttons to navigate between files
+- **Image Viewing**: Full-screen image preview with zoom-to-fit
+- **PDF Viewing**: Embedded PDF viewer in preview modal
+- Clickable file cards (excluding action buttons)
 
 ### ✅ UI/UX
 - Leftmost collapsible sidebar with navigation (Chat, Folders, Profile)
 - Expandable history sidebar for conversation threads
+- **Windows Explorer-Style Folder Management**: Browse folders and files in unified view
+- **Action Cards**: "New Folder" and "Add Files" cards at top of folder contents
+- **Hover Actions**: Download and save buttons appear on chat message hover
+- **Dropdown Menu**: Chat actions menu with Download and Save to Folder options
+- **Folder Picker Dialog**: Reusable Windows Explorer-style dialog for folder selection
 - Custom markdown rendering with comprehensive CSS styling
 - Responsive design with Tailwind CSS
 - Loading states and error handling
@@ -98,9 +112,10 @@ A Next.js educational platform combining Notion-like folder organization with Ch
 ### ✅ Layout Structure
 - **Main Sidebar**: Navigation between Chat, Folders, and Profile
 - **History Sidebar** (Chat page): Conversation history with "New Chat" button
-- **Folders Page**: Folder tree on left, files list on right
-- **Chat Page**: Full-width chat interface with history sidebar
+- **Folders Page**: Windows Explorer-style with expandable folder tree on left, subfolders and files displayed together in main area
+- **Chat Page**: Full-width chat interface with history sidebar and per-message actions
 - **Quiz Page**: Full-screen quiz interface with progress tracking
+- **File Preview**: Full-screen modal overlay with navigation and download options
 
 ## Environment Variables Required
 
@@ -129,20 +144,29 @@ A Next.js educational platform combining Notion-like folder organization with Ch
 - Click "New Chat" to start fresh conversation
 - Export any conversation as PDF using download button
 
-### 3. **Organize with Folders**
+### 3. **Organize with Folders (Windows Explorer Style)**
 - Click "Folders" in sidebar
-- Click "+" to create new folder
-- Type folder name and press Enter
+- **Create Root Folder**: Click "+" in sidebar or use "New Folder" card in main area
+- **Create Subfolders**: Select parent folder, then use "New Folder" card or hover over folder in picker
+- **Browse Subfolders**: Click subfolder cards to navigate deeper
+- Expand/collapse folders in sidebar tree
 - Drag folders to reorder them
 - Click three dots on folder for rename/delete options
-- Create subfolders by selecting parent folder first
+- **Unified View**: See both subfolders and files together in main area
 
 ### 4. **Upload Files**
-- Select a folder from left panel
-- Drag and drop files or click upload area
+- Select a folder from left panel (or create new one)
+- Click "Add Files" card at top of folder contents
+- Or click "+" in sidebar for quick access
 - Supported: JPG, PNG, PDF, DOCX
 - Files automatically parsed for metadata (size, pages, type)
-- View uploaded files as cards in right panel
+- View uploaded files as cards alongside subfolders
+
+### 4b. **Preview Files**
+- Click anywhere on a file card (except action buttons) to open preview
+- Navigate between files using arrow keys or on-screen buttons
+- Press Escape or click X to close preview
+- Download files directly from preview modal
 
 ### 5. **Summarize Documents**
 - Click "Summarize" button on any file card
@@ -170,9 +194,14 @@ A Next.js educational platform combining Notion-like folder organization with Ch
 - Helps predict exam question patterns
 
 ### 8. **Download & Export**
-- Download original files: Click "Download" on file card
-- Export conversations: Click download icon in chat header
-- Exports as formatted PDF with timestamps
+- **Download Files**: Click "Download" on file card or in preview modal
+- **Export Full Conversation**: Click menu icon (☰) in chat header → "Download as PDF"
+- **Export Single Message**: Hover over any chat bubble → Click "Download"
+- **Save to Folder**: 
+  - For full conversation: Click menu icon → "Save to Folder" → Select folder
+  - For single message: Hover over bubble → Click "Save" → Select folder
+  - Create new folders directly in the picker dialog
+- All exports include timestamps and formatted content
 
 ### 9. **Manage Profile**
 - Click "Profile" in sidebar
@@ -200,6 +229,19 @@ Each chat and summarization session maintains its own unique conversation ID. Me
 - Main content area: Chat interface or folder view
 
 ## Recent Changes
+- November 6, 2025: **Major UI/UX Overhaul - Notion-Style File Management**
+  - **File Preview System**: Implemented Instagram/Twitter-style full-screen preview modal for all files
+  - **Windows Explorer Folders**: Redesigned folder page to show subfolders and files together in main area
+  - **Action Cards**: Replaced drag-drop zone with "New Folder" and "Add Files" cards at top of contents
+  - **Subfolder Support**: Full nested folder navigation with expandable tree in sidebar
+  - **Folder Picker Dialog**: Reusable Windows Explorer-style dialog for selecting save locations
+  - **Chat Enhancements**:
+    - Individual message PDF downloads with hover buttons
+    - Dropdown menu for chat actions (Download, Save to Folder)
+    - Save entire conversations or single messages to any folder
+    - Create new folders directly from save dialog
+  - **Improved Navigation**: Click file cards to preview, click subfolder cards to navigate
+  - **Hover Actions**: Download and Save buttons appear on chat message hover
 - November 5, 2025: **Added Math Rendering and Image Vision Support**
   - Installed remark-math, rehype-katex, and katex packages for LaTeX math rendering
   - Updated MarkdownContent component to support inline ($...$) and display ($$...$$) math equations
