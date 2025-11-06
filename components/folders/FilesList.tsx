@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FileUpload } from "./FileUpload";
 import { FileCard } from "./FileCard";
+import { FilePreviewDialog } from "./FilePreviewDialog";
 
 export function FilesList({ folderId }: { folderId: string | null }) {
+  const [previewFile, setPreviewFile] = useState<any | null>(null);
   const { data: files = [], isLoading } = useQuery({
     queryKey: ["files", folderId],
     queryFn: async () => {
@@ -38,11 +41,22 @@ export function FilesList({ folderId }: { folderId: string | null }) {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {files.map((file: any) => (
-              <FileCard key={file.id} file={file} />
+              <FileCard 
+                key={file.id} 
+                file={file} 
+                onPreview={(file) => setPreviewFile(file)}
+              />
             ))}
           </div>
         )}
       </div>
+
+      <FilePreviewDialog
+        file={previewFile}
+        files={files}
+        isOpen={!!previewFile}
+        onClose={() => setPreviewFile(null)}
+      />
     </div>
   );
 }

@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Send, Download, Paperclip, X, Loader2, FileText, Image as ImageIcon } from "lucide-react";
+import { Send, Download, Paperclip, X, Loader2, FileText, Image as ImageIcon, Menu, Save, FolderOpen } from "lucide-react";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { useRouter } from "next/navigation";
-import { exportConversationToPDF, downloadPDF } from "@/lib/exportPDF";
+import { exportConversationToPDF, downloadPDF, exportSingleMessageToPDF } from "@/lib/exportPDF";
+import { FolderPickerDialog } from "@/components/folders/FolderPickerDialog";
 
 interface AttachedFile {
   id: string;
@@ -34,6 +35,10 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
   const [input, setInput] = useState("");
   const [currentConvId, setCurrentConvId] = useState(conversationId);
   const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([]);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const [showFolderPicker, setShowFolderPicker] = useState(false);
+  const [savingToFolder, setSavingToFolder] = useState<'conversation' | 'message' | null>(null);
+  const [messageToSave, setMessageToSave] = useState<any | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -122,20 +127,90 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
     if (messages.length === 0) return;
     const pdf = await exportConversationToPDF("Chat Conversation", messages);
     downloadPDF(pdf, `conversation-${currentConvId || Date.now()}.pdf`);
+    setShowActionsMenu(false);
+  };
+
+  const handleExportSingleMessage = async (message: any, index: number) => {
+    const pdf = await exportSingleMessageToPDF(message, index);
+    downloadPDF(pdf, `message-${index + 1}-${Date.now()}.pdf`);
+  };
+
+  const handleSaveToFolder = async (folderId: string) => {
+    if (savingToFolder === 'conversation' && currentConvId) {
+      const pdf = await exportConversationToPDF("Chat Conversation", messages);
+      const blob = pdf.output('blob');
+      
+      const file = new File([blob], `conversation-${currentConvId}.pdf`, { type: 'application/pdf' });
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folderId', folderId);
+
+      await fetch('/api/files/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['files', folderId] });
+    } else if (savingToFolder === 'message' && messageToSave) {
+      const messageIndex = messages.findIndex((m: any) => m.id === messageToSave.id);
+      const pdf = await exportSingleMessageToPDF(messageToSave, messageIndex);
+      const blob = pdf.output('blob');
+      
+      const file = new File([blob], `message-${messageIndex + 1}.pdf`, { type: 'application/pdf' });
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folderId', folderId);
+
+      await fetch('/api/files/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['files', folderId] });
+      setMessageToSave(null);
+    }
+
+    setShowFolderPicker(false);
+    setSavingToFolder(null);
   };
 
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-800">Chat</h2>
-        <button
-          onClick={handleExportPDF}
-          disabled={messages.length === 0}
-          className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50"
-          title="Export as PDF"
-        >
-          <Download size={20} className="text-gray-600" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowActionsMenu(!showActionsMenu)}
+            disabled={messages.length === 0}
+            className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+            title="Chat actions"
+          >
+            <Menu size={20} className="text-gray-600" />
+          </button>
+          
+          {showActionsMenu && (
+            <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-48">
+              <button
+                onClick={handleExportPDF}
+                className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-100 text-sm"
+              >
+                <Download size={16} />
+                <span>Download as PDF</span>
+              </button>
+              <button
+                onClick={() => {
+                  setSavingToFolder('conversation');
+                  setShowFolderPicker(true);
+                  setShowActionsMenu(false);
+                }}
+                className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-100 text-sm"
+              >
+                <Save size={16} />
+                <span>Save to Folder</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -151,53 +226,78 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
             </div>
           </div>
         ) : (
-          messages.map((message: Message) => (
+          messages.map((message: Message, index: number) => (
             <div
               key={message.id}
               className={`flex ${
                 message.role === "user" ? "justify-end" : "justify-start"
-              }`}
+              } group`}
             >
-              <div
-                className={`max-w-3xl ${
-                  message.role === "user"
-                    ? "bg-blue-600 text-white rounded-2xl px-4 py-3"
-                    : "bg-gray-100 text-gray-800 rounded-2xl px-4 py-3"
-                }`}
-              >
-                {message.attachedFiles && message.attachedFiles.length > 0 && (
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    {message.attachedFiles.map((file) => (
-                      <a
-                        key={file.id}
-                        href={file.url}
-                        download={file.name}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`flex items-center gap-2 px-2 py-1 rounded hover:opacity-80 transition-opacity ${
-                          message.role === "user"
-                            ? "bg-blue-500"
-                            : "bg-white text-gray-700"
-                        }`}
-                      >
-                        {getFileIcon(file.type)}
-                        <div className="flex flex-col">
-                          <span className="text-xs truncate max-w-[120px] font-medium">
-                            {file.name}
-                          </span>
-                          <span className="text-[10px] opacity-75">
-                            {file.type.split('/')[1].toUpperCase()} • {(file.size / 1024).toFixed(0)}KB
-                          </span>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                )}
-                {message.role === "user" ? (
-                  <p>{message.content}</p>
-                ) : (
-                  <MarkdownContent content={message.content} />
-                )}
+              <div className="flex flex-col gap-2 max-w-3xl">
+                <div
+                  className={`${
+                    message.role === "user"
+                      ? "bg-blue-600 text-white rounded-2xl px-4 py-3"
+                      : "bg-gray-100 text-gray-800 rounded-2xl px-4 py-3"
+                  }`}
+                >
+                  {message.attachedFiles && message.attachedFiles.length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {message.attachedFiles.map((file) => (
+                        <a
+                          key={file.id}
+                          href={file.url}
+                          download={file.name}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center gap-2 px-2 py-1 rounded hover:opacity-80 transition-opacity ${
+                            message.role === "user"
+                              ? "bg-blue-500"
+                              : "bg-white text-gray-700"
+                          }`}
+                        >
+                          {getFileIcon(file.type)}
+                          <div className="flex flex-col">
+                            <span className="text-xs truncate max-w-[120px] font-medium">
+                              {file.name}
+                            </span>
+                            <span className="text-[10px] opacity-75">
+                              {file.type.split('/')[1].toUpperCase()} • {(file.size / 1024).toFixed(0)}KB
+                            </span>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  {message.role === "user" ? (
+                    <p>{message.content}</p>
+                  ) : (
+                    <MarkdownContent content={message.content} />
+                  )}
+                </div>
+                
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => handleExportSingleMessage(message, index)}
+                    className="px-2 py-1 bg-white border border-gray-200 rounded hover:bg-gray-50 flex items-center gap-1 text-xs text-gray-700"
+                    title="Download this message"
+                  >
+                    <Download size={12} />
+                    Download
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMessageToSave(message);
+                      setSavingToFolder('message');
+                      setShowFolderPicker(true);
+                    }}
+                    className="px-2 py-1 bg-white border border-gray-200 rounded hover:bg-gray-50 flex items-center gap-1 text-xs text-gray-700"
+                    title="Save to folder"
+                  >
+                    <FolderOpen size={12} />
+                    Save
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -267,6 +367,17 @@ export function ChatInterface({ userId, conversationId }: { userId: string; conv
           </button>
         </form>
       </div>
+
+      <FolderPickerDialog
+        isOpen={showFolderPicker}
+        onClose={() => {
+          setShowFolderPicker(false);
+          setSavingToFolder(null);
+          setMessageToSave(null);
+        }}
+        onSelect={handleSaveToFolder}
+        title={savingToFolder === 'message' ? 'Save Message to Folder' : 'Save Conversation to Folder'}
+      />
     </div>
   );
 }

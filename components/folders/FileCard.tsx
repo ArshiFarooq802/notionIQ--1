@@ -13,7 +13,12 @@ import {
   Trash2,
 } from "lucide-react";
 
-export function FileCard({ file }: { file: any }) {
+interface FileCardProps {
+  file: any;
+  onPreview?: (file: any) => void;
+}
+
+export function FileCard({ file, onPreview }: FileCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -72,13 +77,28 @@ export function FileCard({ file }: { file: any }) {
     router.push(`/quiz/${data.quizId}`);
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.file-actions')) {
+      return;
+    }
+    if (onPreview) {
+      onPreview(file);
+    }
+  };
+
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+    <div 
+      className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="flex items-start justify-between mb-3">
         {getFileIcon()}
-        <div className="relative">
+        <div className="relative file-actions">
           <button
-            onClick={() => setShowMenu(!showMenu)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(!showMenu);
+            }}
             className="p-1 hover:bg-gray-100 rounded"
           >
             <MoreVertical size={16} />
@@ -87,7 +107,8 @@ export function FileCard({ file }: { file: any }) {
           {showMenu && (
             <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-32">
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (confirm("Delete this file?")) {
                     deleteFile.mutate();
                   }
@@ -111,23 +132,32 @@ export function FileCard({ file }: { file: any }) {
         <p>Type: {file.type.split("/")[1].toUpperCase()}</p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 file-actions">
         <button
-          onClick={handleDownload}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDownload();
+          }}
           className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded text-xs"
         >
           <Download size={14} />
           Download
         </button>
         <button
-          onClick={handleSummarize}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSummarize();
+          }}
           className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs"
         >
           <MessageSquare size={14} />
           Summarize
         </button>
         <button
-          onClick={handleCreateQuiz}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCreateQuiz();
+          }}
           className="flex items-center gap-1 px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded text-xs"
         >
           <Brain size={14} />

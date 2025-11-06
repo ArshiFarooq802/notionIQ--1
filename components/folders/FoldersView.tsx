@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FolderTree } from "./FolderTree";
-import { FilesList } from "./FilesList";
+import { FolderContents } from "./FolderContents";
 import { Plus } from "lucide-react";
 
 export function FoldersView({ userId }: { userId: string }) {
@@ -11,6 +11,17 @@ export function FoldersView({ userId }: { userId: string }) {
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolder, setShowNewFolder] = useState(false);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const handleSelectFolder = (e: CustomEvent) => {
+      setSelectedFolderId(e.detail);
+    };
+
+    window.addEventListener('selectFolder', handleSelectFolder as EventListener);
+    return () => {
+      window.removeEventListener('selectFolder', handleSelectFolder as EventListener);
+    };
+  }, []);
 
   const { data: folders = [] } = useQuery({
     queryKey: ["folders"],
@@ -98,8 +109,8 @@ export function FoldersView({ userId }: { userId: string }) {
         </div>
       </div>
 
-      <div className="flex-1">
-        <FilesList folderId={selectedFolderId} />
+      <div className="flex-1 overflow-y-auto">
+        <FolderContents folderId={selectedFolderId} />
       </div>
     </div>
   );
