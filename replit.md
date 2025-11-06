@@ -229,6 +229,14 @@ Each chat and summarization session maintains its own unique conversation ID. Me
 - Main content area: Chat interface or folder view
 
 ## Recent Changes
+- November 6, 2025: **Fixed Folder Navigation with URL-Based Routing**
+  - Implemented dynamic routing with `/folders/[folderId]` for direct folder access
+  - Updated all folder click handlers to use Next.js router.push() for reliable navigation
+  - Added loading state UI that displays when folder contents are being fetched
+  - Fixed state synchronization between URL parameters and local state
+  - URLs now change when navigating between folders, making them shareable
+  - Navigation works reliably even with multiple rapid clicks
+  - Back button navigation properly clears folder selection
 - November 6, 2025: **Major UI/UX Overhaul - Notion-Style File Management**
   - **File Preview System**: Implemented Instagram/Twitter-style full-screen preview modal for all files
   - **Windows Explorer Folders**: Redesigned folder page to show subfolders and files together in main area
