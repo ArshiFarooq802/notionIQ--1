@@ -50,9 +50,9 @@ A Next.js educational platform combining Notion-like folder organization with Ch
 ### ✅ Folders & File Organization
 - Hierarchical folder system with unlimited nesting
 - Create, rename, and delete folders with confirmation dialogs
-- Drag-and-drop folder reordering with @dnd-kit
 - Parent-child folder relationships
 - Folder-specific file viewing
+- URL-based navigation with shareable folder links
 
 ### ✅ File Management
 - File upload with drag-and-drop support
@@ -229,8 +229,11 @@ Each chat and summarization session maintains its own unique conversation ID. Me
 - Main content area: Chat interface or folder view
 
 ## Recent Changes
-- November 6, 2025: **Fixed Folder Navigation with URL-Based Routing**
+- November 6, 2025: **Fixed Folder Navigation and Removed Drag-and-Drop Reordering**
   - Implemented dynamic routing with `/folders/[folderId]` for direct folder access
+  - Removed all drag-and-drop folder reordering functionality that was interfering with navigation
+  - Made entire folder row clickable for navigation (not just the text)
+  - Added event.stopPropagation() to all interactive elements (expand/collapse, context menu, rename, delete)
   - Updated all folder click handlers to use Next.js router.push() for reliable navigation
   - Added loading state UI that displays when folder contents are being fetched
   - Fixed state synchronization between URL parameters and local state
