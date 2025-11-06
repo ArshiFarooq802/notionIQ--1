@@ -6,22 +6,15 @@ import { FolderTree } from "./FolderTree";
 import { FolderContents } from "./FolderContents";
 import { Plus } from "lucide-react";
 
-export function FoldersView({ userId }: { userId: string }) {
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+export function FoldersView({ userId, initialFolderId }: { userId: string; initialFolderId?: string }) {
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(initialFolderId || null);
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolder, setShowNewFolder] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const handleSelectFolder = (e: CustomEvent) => {
-      setSelectedFolderId(e.detail);
-    };
-
-    window.addEventListener('selectFolder', handleSelectFolder as EventListener);
-    return () => {
-      window.removeEventListener('selectFolder', handleSelectFolder as EventListener);
-    };
-  }, []);
+    setSelectedFolderId(initialFolderId || null);
+  }, [initialFolderId]);
 
   const { data: folders = [] } = useQuery({
     queryKey: ["folders"],

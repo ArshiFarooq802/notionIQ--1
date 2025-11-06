@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Folder, ChevronRight, ChevronDown, MoreVertical, Edit2, Trash2 } from "lucide-react";
 import {
@@ -32,6 +33,7 @@ function SortableFolderItem({ folder, selectedFolderId, onSelectFolder, level }:
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(folder.name);
   const [showMenu, setShowMenu] = useState(false);
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
@@ -114,7 +116,10 @@ function SortableFolderItem({ folder, selectedFolderId, onSelectFolder, level }:
           ) : (
             <span
               className="flex-1 text-sm"
-              onClick={() => onSelectFolder(folder.id)}
+              onClick={() => {
+                onSelectFolder(folder.id);
+                router.push(`/folders/${folder.id}`);
+              }}
             >
               {folder.name}
             </span>

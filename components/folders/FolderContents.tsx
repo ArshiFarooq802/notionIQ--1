@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FolderPlus, FilePlus, Folder as FolderIcon } from "lucide-react";
+import { FolderPlus, FilePlus, Folder as FolderIcon, Loader2 } from "lucide-react";
 import { FileCard } from "./FileCard";
 import { FilePreviewDialog } from "./FilePreviewDialog";
 
@@ -15,6 +16,7 @@ export function FolderContents({ folderId }: FolderContentsProps) {
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const { data: files = [], isLoading: filesLoading } = useQuery({
@@ -151,6 +153,17 @@ export function FolderContents({ folderId }: FolderContentsProps) {
     );
   }
 
+  if (filesLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <Loader2 size={48} className="mx-auto text-blue-500 mb-4 animate-spin" />
+          <p className="text-lg text-gray-600 font-medium">Loading folder contents...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-6">
@@ -224,10 +237,7 @@ export function FolderContents({ folderId }: FolderContentsProps) {
             <div
               key={subfolder.id}
               className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => {
-                const event = new CustomEvent('selectFolder', { detail: subfolder.id });
-                window.dispatchEvent(event);
-              }}
+              onClick={() => router.push(`/folders/${subfolder.id}`)}
             >
               <div className="flex items-start justify-between mb-3">
                 <FolderIcon size={32} className="text-blue-500" />
